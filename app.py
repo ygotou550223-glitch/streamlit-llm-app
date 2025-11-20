@@ -3,10 +3,9 @@ import os
 import streamlit as st
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.chains import LLMChain
+from langchain_core.prompts import ChatPromptTemplate
 
-# 環境変数の読み込み（ローカルの .env 用）
+# .env から環境変数を読み込む
 load_dotenv()
 
 # ===== LLM（OpenAI GPT）の設定 =====
@@ -14,6 +13,7 @@ llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.3,
 )
+
 
 # ==============================
 # LLM に質問する関数
@@ -35,7 +35,6 @@ def ask_llm(user_input: str, expert_type: str) -> str:
     else:
         system_template = "あなたは日本語で丁寧に回答する親切なアドバイザーです。"
 
-    # プロンプトテンプレート（system ＋ human）
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_template),
@@ -43,37 +42,36 @@ def ask_llm(user_input: str, expert_type: str) -> str:
         ]
     )
 
-    # LLMChain を作成
-    chain = LLMChain(llm=llm, prompt=prompt)
+    # プロンプトをメッセージに変換して LLM を呼び出す
+    messages = prompt.format_messages(input_text=user_input)
+    response = llm.invoke(messages)
 
-    # チェーンに入力して回答を取得
-    response = chain.run({"input_text": user_input})
-
-    return response
+    return response.content
 
 
 # ==============================
-# Streamlit アプリ本体
+# Streamlit 画面
 # ==============================
-st.set_page_config(
-    page_title="Streamlit × LangChain LLMサンプル",
-    page_icon="🤖",
+st.set_page_config(page_title="Streamlit × LangChain LLMサンプル")
+
+st.title("🧠 Streamlit × LangChain LLMサンプル")
+
+st.subheader("📄 アプリの概要")
+st.write(
+    """
+このアプリでは、画面に入力したテキストを LangChain を使って LLM に渡し、
+選択した「専門家」の立場からアドバイスを返してもらうことができます。
+"""
 )
 
-st.title("🤖 Streamlit × LangChain LLMサンプル")
-
+st.subheader("✅ 使い方")
 st.markdown(
     """
-### 📄 アプリの概要
-このアプリでは、画面に入力したテキストを **LangChain** を使って LLM に渡し、
-選択した「専門家」の立場からアドバイスを返してもらうことができます。
+1. まず「どんな専門家に相談するか」をラジオボタンから選びます  
+2. 下のテキスト入力欄に、相談したい内容や質問を入力します  
+3. 「LLMに相談する」ボタンを押すと、LLMからの回答が画面に表示されます  
 
-### ✅ 使い方
-1. まず **「どんな専門家に相談するか」** をラジオボタンから選びます  
-2. 下のテキスト入力欄に、相談したい内容や質問を書きます  
-3. **「LLMに相談する」** ボタンを押すと、LLMからの回答が画面に表示されます  
-
-※このアプリを動かすには、`.env` ファイルなどで `OPENAI_API_KEY` を設定しておいてください。
+※ このアプリを動かすには、`.env` ファイルなどで `OPENAI_API_KEY` を設定しておいてください。
 """
 )
 
@@ -83,20 +81,20 @@ expert_type = st.radio(
     ("キャリアコーチ", "健康アドバイザー"),
 )
 
-# ユーザー入力欄
-user_text = st.text_area(
-    "ここに相談内容 / 質問を書いてください。",
-    height=200,
+# テキスト入力欄
+user_input = st.text_area(
+    "ここに相談内容／質問を入力してください。",
     placeholder="例）40代からAIスキルを身につけるには、どんな勉強方法が良いですか？",
+    height=150,
 )
 
-# ボタン押下で LLM に問い合わせ
-if st.button("LLMに相談する"):
-    if user_text.strip() == "":
-        st.warning("まずは相談内容を入力してください。")
+# ボタンを押したら LLM に問い合わせ
+if st.button("💬 LLMに相談する"):
+    if not user_input.strip():
+        st.warning("相談内容を入力してください。")
     else:
-        with st.spinner("回答を生成しています..."):
-            answer = ask_llm(user_text, expert_type)
-
-        st.subheader("💡 LLMからの回答")
+        with st.spinner("LLMに相談中です..."):
+            answer = ask_llm(user_input, expert_type)
+        st.subheader("📝 回答")
         st.write(answer)
+
