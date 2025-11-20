@@ -3,8 +3,9 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+
 from langchain.chains import LLMChain
 
 
@@ -18,9 +19,8 @@ load_dotenv()  # 同じフォルダの .env から OPENAI_API_KEY を読み込�
 # LLM の準備（旧 LangChain スタイル）
 # ==============================
 llm = ChatOpenAI(
-    model_name="gpt-4o-mini",  # 講座側の指定に合わせてOK
-    temperature=0.5,
-)
+    model="gpt-4o-mini",  # ★ここは model_name ではなく model
+    temperature=0.3,
 
 
 # ==============================
